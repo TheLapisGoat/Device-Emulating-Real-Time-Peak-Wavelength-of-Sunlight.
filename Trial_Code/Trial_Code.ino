@@ -1,6 +1,6 @@
-#include <TimeLib.h>
+#include <TimeLib.h> /*Library Time by Paul Stoffregen. Allow the functionality of setting time and getting current time value.*/
 
-class Time_of_Day
+class Time_of_Day /*Decalare class containing time values*/
 {
  public:
     int minutes;
@@ -11,14 +11,14 @@ class Time_of_Day
     }
 };
 
-int current_time()
+int current_time() /* returns current time in terms of minutes*/
 {
   return hour()*60 + minute();
 }
 
-void Wav_to_RGB (double wavelength, int arr[3])
-    {
-    double gamma = 0.8;
+void Wav_to_RGB (double wavelength, int arr[3]) /*Takes wavelength, pointer to an array. Converts wavelength to RGB values and edits array to that. Source : Prof Dan Bruton, http://www.physics.sfasu.edu/astro/color/spectra.html */ 
+    {                                                                                                                                               /* Original code written in FORTRAN, last updated 20Feb 1996*/
+    double gamma = 0.8;                         /*Input wavelength b/w 380 and 750nm, visible spectrum of light*/
     double R, G, B, attenuation;
     if (wavelength >= 380 && wavelength <= 440) {
         attenuation = 0.3 + 0.7 * (wavelength - 380) / 60.0;
@@ -57,13 +57,13 @@ void Wav_to_RGB (double wavelength, int arr[3])
          G = 0.0;
          B = 0.0;
         }
-    int R1 = R * 255;
-    if ( R1 > 255)
+    int R1 = R * 255; /*Gives RGB values in range of 0-255*/
+    if ( R1 > 255)  /*Checks if RGB value is greater than 255*/
     R1 = 255;
     int G1 = G * 255;
     if ( G1 > 255)
     G1 = 255;
-    int b1 = B * 255; //B1 is some pre-existing arduino object.
+    int b1 = B * 255; /*B1 is some pre-existing arduino object, used b1 instead*/
     if ( b1 > 255)
     b1 = 255;
     arr[0]=R1; arr[1]=G1; arr[2]=b1;
@@ -72,8 +72,8 @@ void Wav_to_RGB (double wavelength, int arr[3])
 
 
 
-Time_of_Day sunrise, sunset;
-int a, b, c, d, e, f;
+Time_of_Day sunrise, sunset;  /*Delcares all objects*/
+int a, b, c, d, e, f; /*temp. input values*/
 bool restart = false;
 int min_day_span, min_mid_day;
 double colour_wav_slope, colour_wav;
@@ -95,11 +95,11 @@ void loop()
     min_day_span = sunset.minutes - sunrise.minutes;
     min_mid_day = (sunset.minutes+sunrise.minutes)/2;
     colour_wav_slope = 621.80/min_day_span;
-    setTime(e, f, 0, 0, 0, 0);
+    setTime(e, f, 0, 0, 0, 0);            /*Set time*/
     restart = false;
   }
 
-  if ( current_time() <= min_mid_day && current_time() >= sunrise.minutes )
+  if ( current_time() <= min_mid_day && current_time() >= sunrise.minutes )     /*Calculate wavelength as at a particular time*/
   {
     colour_wav = 750 - colour_wav_slope*(current_time()-sunrise.minutes);
   }
@@ -113,6 +113,6 @@ void loop()
   }
 
   int arr[3];
-  Wav_to_RGB(colour_wav, arr);
+  Wav_to_RGB(colour_wav, arr);  /*Call function to get RGB value from wavelength*/
   
 }
