@@ -1,6 +1,14 @@
 #include <TimeLib.h> /*Library Time by Paul Stoffregen. Allow the functionality of setting time and getting current time value.*/
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 
-class Time_of_Day /*Decalare class containing time values*/
+WiFiClient client;
+HTTPClient http;
+
+
+
+class Time_of_Day                             /*Decalare class containing time values*/
 {
  public:
     int minutes;
@@ -67,13 +75,55 @@ void Wav_to_RGB (double wavelength, int arr[3]) /*Takes wavelength, pointer to a
     if ( b1 > 255)
     b1 = 255;
     arr[0]=R1; arr[1]=G1; arr[2]=b1;
+    delay(1000);
     }
 
 
+void EnableWiFi()                                       /* Connects to WiFi*/
+{
+  WiFi.mode(WIFI_STA);
+  WiFi.begin("SSID", "PASSWORD");                     /*Enter ssid, password as strings)*/
+  Serial.print("Connecting to WiFi");
+  while(WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print('.');
+    delay(200);
+  }
+  Serial.print("IP Address =");
+  Serial.print(WiFi.localIP());
+}
+
+void GetData(int arr1[2], int arr2[2], int arr3[2])
+{
+  http.begin(client, "https://api.ipgeolocation.io/astronomy?apiKey=d61717514c2844eeae17b37de8ff3242");
+  int httpCode = http.GET();
+  if(httpCode < 0)                                            /*Check for httpCode less than 0, which occurs if failed to connect to server*/
+  {
+    Serial.println("I don't feel so good, httpCode < 0"); 
+    while(true);                                              /*Infinite loop incase of error*/
+  }
+  String payload = http.getString();
+  Serial.println(payload);
+  int Time_index = payload.indexOf("current_time");
+  int Sunrise_index = payload.indexOf("sunrise");
+  int Sunset_index = payload.indexOf("sunset");
+  String Sunrise_time1 = payload.substring(Sunrise_index+10, Sunrise_index+12);
+  String Sunrise_time2 = payload.substring(Sunrise_index+13, Sunrise_index+15);
+  String Sunset_time1 = payload.substring(Sunset_index+9, Sunset_index+11);
+  String Sunset_time2 = payload.substring(Sunset_index+12, Sunset_index+14);
+  String New_time1 = payload.substring(Time_index+15, Time_index+17);
+  String New_time2 = payload.substring(Time_index+18, Time_index+20);
+  arr1[0] = Sunrise_time1.toInt(); arr1[1] = Sunrise_time2.toInt();
+  arr2[0] = Sunset_time1.toInt(); arr2[1] = Sunset_time2.toInt();
+  arr3[0] = New_time1.toInt(); arr3[1] = New_time2.toInt();
+  http.end();
+  delay(1000);
+}
 
 
-Time_of_Day sunrise, sunset;  /*Delcares all objects*/
-int a, b, c, d, e, f; /*temp. input values*/
+
+
+Time_of_Day sunrise, sunset;               /*Sunset, Sunrise containers.*/
 bool restart = false;
 int min_day_span, min_mid_day;
 double colour_wav_slope, colour_wav;
@@ -83,19 +133,23 @@ double colour_wav_slope, colour_wav;
 
 
 void setup() {
-  // put your setup code here, to run once:
+  Serial.begin(115200);
+  
 }
 
 
 void loop() 
 {
-  if (restart == true)
+  if (restart)
   {
-    sunrise.set(a, b); sunset.set(c, d);
+    EnableWiFi();
+    int a[2], b[2], c[2]; /* Arrays for h, min. a: Sunrise, b: Sunset, c: Current time IST)*/
+    GetData(a, b, c);   /*Gives arrays h and min values.*/
+    sunrise.set(a[0], a[1]); sunset.set(b[0], b[1]);
     min_day_span = sunset.minutes - sunrise.minutes;
     min_mid_day = (sunset.minutes+sunrise.minutes)/2;
     colour_wav_slope = 621.80/min_day_span;
-    setTime(e, f, 0, 0, 0, 0);            /*Set time*/
+    setTime(c[0], c[1], 0, 0, 0, 0);            /*Set time*/
     restart = false;
   }
 
@@ -111,8 +165,7 @@ void loop()
   {
     colour_wav = 750;
   }
-
+  delay(1000);
   int arr[3];
   Wav_to_RGB(colour_wav, arr);  /*Call function to get RGB value from wavelength*/
-  
 }
