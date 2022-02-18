@@ -79,7 +79,7 @@ void Wav_to_RGB (double wavelength, int arr[3]) /*Takes wavelength, pointer to a
 void EnableWiFi()                                       /* Connects to WiFi*/
 {
   WiFi.mode(WIFI_STA);
-  WiFi.begin("TP-Link_BF97", "Crzdip@90");                     /*Enter ssid, password as strings)*/
+  WiFi.begin("SSID", "password");                     /*Enter ssid, password as strings)*/
   Serial.print("Connecting to WiFi");
   while(WiFi.status() != WL_CONNECTED)
   {
