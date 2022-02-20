@@ -5,7 +5,7 @@
 
 WiFiClient client;
 
-class Time_of_Day                             /*Declare class containing time values*/
+class Time_of_Day                             /*Decalare class containing time values*/
 {
  public:
     int minutes;
@@ -16,7 +16,7 @@ class Time_of_Day                             /*Declare class containing time va
     }
 };
 
-int current_time() /* Returns current time in terms of minutes*/
+int current_time() /* returns current time in terms of minutes*/
 {
   return hour()*60 + minute();
 }
@@ -79,25 +79,25 @@ void Wav_to_RGB (double wavelength, int arr[3]) /*Takes wavelength, pointer to a
 void EnableWiFi()                                       /* Connects to WiFi*/
 {
   WiFi.mode(WIFI_STA);
-  WiFi.begin("SSID", "password");                     /*Enter ssid, password as strings)*/
+  WiFi.begin("SSID", "PASSWORD");                     /*Enter ssid, password as strings)*/
   Serial.print("Connecting to WiFi");
   while(WiFi.status() != WL_CONNECTED)
   {
     Serial.print('.');
     delay(200);
   }
-  Serial.print("IP Address ="); 
-  Serial.print(WiFi.localIP());                     /*Prints IP Adress*/
+  Serial.print("IP Address =");
+  Serial.print(WiFi.localIP());
 }
 
 void GetData(int arr1[2], int arr2[2], int arr3[2])
 {
-  HTTPClient http; /*Declares HTTP clients*/
+  HTTPClient http;
   HTTPClient http1;
   HTTPClient http2;
   delay(500);
 
-  http.begin(client, "http://ip-api.com/json/");    
+  http.begin(client, "http://ip-api.com/json/");
   
   int httpCode = http.GET();
   if(httpCode < 0)  
@@ -105,7 +105,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
     Serial.println("I don't feel so good, httpCode < 0"); 
     while(true);                                              
   }
-  String payload1 = http.getString();       /*String containing lat and long data of location of device*/
+  String payload1 = http.getString();
   int lat_index = payload1.indexOf("lat");
   int lon_index = payload1.indexOf("lon");
   String lat = payload1.substring(lat_index+5, lat_index+12);
@@ -121,7 +121,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
     Serial.println("I don't feel so good, httpCode < 0"); 
     while(true);                                             
   }
-  String payload2 = http1.getString();                        /*String containing sunrise, sunset data */
+  String payload2 = http1.getString();
   int Sunrise_index = payload2.indexOf("sunrise");
   int Sunset_index = payload2.indexOf("sunset");
   int colon_index = payload2.indexOf(':', Sunrise_index+10);
@@ -129,7 +129,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
   String Sunrise_time1 = payload2.substring(Sunrise_index+10, colon_index);
   String Sunrise_time2 = payload2.substring(colon_index+1, colon_index+3);
   arr1[0] = Sunrise_time1.toInt(); arr1[1] = Sunrise_time2.toInt();
-    if( payload2.substring(colon_index+7, colon_index+9) == "PM" && arr1[0] != 12)         /*Convert PM to 24h data*/
+    if( payload2.substring(colon_index+7, colon_index+9) == "PM" && arr1[0] != 12)
     {
       arr1[0] += 12;
     }
@@ -138,7 +138,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
   String Sunset_time1 = payload2.substring(Sunset_index+9, colon_index);
   String Sunset_time2 = payload2.substring(colon_index+1, colon_index+3);
   arr2[0] = Sunset_time1.toInt(); arr2[1] = Sunset_time2.toInt();
-   if( payload2.substring(colon_index+7, colon_index+9) == "PM"  && arr2[0] != 12)        /*Convert PM to 24h data*/
+   if( payload2.substring(colon_index+7, colon_index+9) == "PM"  && arr2[0] != 12)
     {
       arr2[0] += 12;
     }
@@ -155,7 +155,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
     Serial.println("I don't feel so good, httpCode < 0"); 
     while(true);                                             
   }
-  String payload3 = http2.getString();                        /*Contains IST current time and utc offset*/
+  String payload3 = http2.getString();
   int Time_index = payload3.indexOf("datetime");
   int utc_offset_index = payload3.indexOf("utc_offset");
   String New_time1 = payload3.substring(Time_index+22, Time_index+24);
@@ -173,22 +173,22 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
   
   arr1[0] += utc_h; arr1[1] += utc_m;
   arr2[0] += utc_h; arr2[1] += utc_m;
-  if( arr1[1] >= 60)                          /*Checks if min value is greater than 60*/
+  if( arr1[1] >= 60)
   {
     arr1[0]++; arr1[1] -= 60;
   }
   delay(250);
-  if( arr2[1] >= 60)                        /*Checks if min value is greater than 60*/
+  if( arr2[1] >= 60)
   {
     arr2[0]++; arr2[1] -= 60;
   }
   delay(250);
-  if( arr1[0] >= 24)                        /*Checks if hour values is greater than 24*/
+  if( arr1[0] >= 24)
   {
     arr1[0] -= 24;
   }
-  delay(250); 
-  if( arr2[0] >= 24)                         /*Checks if hour values is greater than 24*/
+  delay(250);
+  if( arr2[0] >= 24)
   {
     arr2[0] -= 24;
   }
@@ -200,7 +200,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])
 
 
 Time_of_Day sunrise, sunset;               /*Sunset, Sunrise containers.*/
-bool restart = true;
+bool restart = false;
 int min_day_span, min_mid_day;
 double colour_wav_slope, colour_wav;
 
@@ -225,7 +225,7 @@ void loop()
     min_day_span = sunset.minutes - sunrise.minutes;
     min_mid_day = (sunset.minutes+sunrise.minutes)/2;
     colour_wav_slope = 621.80/min_day_span;
-    setTime(c[0], c[1], 0, 0, 0, 0);      /*Set time*/
+     setTime(c[0], c[1], 0, 0, 0, 0);      /*Set time*/
     restart = false;
   }
 
