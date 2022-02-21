@@ -1,4 +1,4 @@
-//all the modes done except the auto mode along with the wifi part___wav to rgb function, time in min functions are added___complete manual input output and logic is done
+//Made by DIY Team7 "CAD BUDDIES" IIT KGP (2022)
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -23,8 +23,10 @@ WiFiClient client;
 const byte ROWS = 4;
 const byte COLS = 3;
 char Time[4];               //user time input (manual mode)
-int oppMode = 0;    //Mode device is currently opperating in
+int oppMode = 0;    //Mode device is currently opperating in (0: Nothing, 1: Manual, 2: Auto)
 int min_day_span, min_mid_day;  //Dayspan time and mid day time in min (auto mode)
+bool connectionFail = false;
+bool incorrecKeyInput = false;
 char key;                   //main keypad input variable for selecting modes
 int rgb_manual[3];          //RGB values for manual output
 int rgb_auto[3];            //RGB values for auto output
@@ -56,18 +58,30 @@ class Time_of_Day                                               //Declares class
 
 Time_of_Day sunrise, sunset;               //Instances of Time_of_Day to store time values.
 
+void modergb(String c);
+
 void EnableWiFi()                                              // Connects to WiFi
 {
   WiFi.mode(WIFI_STA);
   WiFi.begin("TP-Link_BF97", "Crzdip@90");                     //Enter ssid, password as strings)
   Serial.print("Connecting to WiFi");
+  int wifi_count = 0;                                          //Check iterations of wifi connecting loop
   while(WiFi.status() != WL_CONNECTED)
   {
     Serial.print('.');
     delay(200);
+    wifi_count++;
+    if (wifi_count == 300) {                                   //Incase connecting takes too long
+        Serial.println("Connection Failed");
+        connectionFail = true;
+        yield();
+        return;
+    }
   }
+  
   Serial.print("IP Address ="); 
   Serial.print(WiFi.localIP());                                //Prints IP Adress
+  yield();                                                     //Yield
 }
 
 void GetData(int arr1[2], int arr2[2], int arr3[2])            //Get arrays for sunrise, sunset and current time in h,min from APIs
@@ -174,6 +188,7 @@ void GetData(int arr1[2], int arr2[2], int arr3[2])            //Get arrays for 
   }
   
   delay(500);
+  yield();                                                                  //Yield
 }
 
 int current_time()                                                          //Returns current time in terms of minutes
@@ -232,17 +247,18 @@ void Wav_to_RGB (double wavelength, int arr[3])                            //Tak
         B = 0.0;
     }
     
-    int R1 = R * 255; /*Gives RGB values in range of 0-255*/
-    if ( R1 > 255)  /*Checks if RGB value is greater than 255*/
+    int R1 = R * 255; //Gives RGB values in range of 0-255
+    if ( R1 > 255)    //Checks if RGB value is greater than 255
     R1 = 255;
     int G1 = G * 255;
     if ( G1 > 255)
     G1 = 255;
-    int b1 = B * 255; /*B1 is some pre-existing arduino object, used b1 instead*/
+    int b1 = B * 255; //B1 is some pre-existing arduino object, used b1 instead
     if ( b1 > 255)
     b1 = 255;
     arr[0]=R1; arr[1]=G1; arr[2]=b1;
     delay(1000);
+    yield();          //Yield
 }
 
 void modesInterface_TextStyle()   //sets text style to size 1 and clears the existing display output along with setting cursor at (0,0)
@@ -254,7 +270,7 @@ void modesInterface_TextStyle()   //sets text style to size 1 and clears the exi
     display.setCursor(0,0);
 }
 
-void modesInterface()  /*displays the main modes interface, won't work without modesInterface_TextStyle both functions are seprate since it allows to print any other message than main interface*/
+void modesInterface()  //displays the main modes interface, won't work without modesInterface_TextStyle both functions are seprate since it allows to print any other message than main interface
 {
     display.setCursor(10,10);
     display.println(F("# to turnoff"));       
@@ -305,18 +321,27 @@ void usertimeinput()
         display.display(); 
         keytime = '\0';
     }
-        String temp12 = String(Time[0]);
-        a = temp12.toInt();        //converts the char input from the keypad to int form
-        temp12 = String(Time[1]);
-        b = temp12.toInt();  
-        temp12 = String(Time[2]);
-        c = temp12.toInt(); 
-        temp12 = String(Time[3]);
-        d = temp12.toInt(); 
+    
+    String temp12 = String(Time[0]);
+    a = temp12.toInt();        //converts the char input from the keypad to int form
+    temp12 = String(Time[1]);
+    b = temp12.toInt();  
+    temp12 = String(Time[2]);
+    c = temp12.toInt(); 
+    temp12 = String(Time[3]);
+    d = temp12.toInt(); 
         
-        int manual_hr = a*10+b;
-        int manual_min = c*10+d;
-        
+    int manual_hr = a*10+b;
+    int manual_min = c*10+d;
+
+    if (manual_hr > 24 || manual_min > 59) {
+        incorrecKeyInput = true;
+        entervalidtime();
+        yield();
+        return;
+    } else {
+      incorrecKeyInput = false;
+    }
     delay(500);            
     display.clearDisplay();
     modesInterface_TextStyle();
@@ -326,7 +351,8 @@ void usertimeinput()
     display.display();    
     display.clearDisplay();
     
-    setTime(manual_hr, manual_min, 0, 0, 0, 0);    //sets clock according to input time     
+    setTime(manual_hr, manual_min, 0, 0, 0, 0);    //sets clock according to input time    
+    yield();                                       //Yield 
 }
 
 void automode()                             //Sets time and calculates wavelength parameters for auto mode
@@ -336,6 +362,13 @@ void automode()                             //Sets time and calculates wavelengt
     modesInterface();
     
     EnableWiFi();                           //Enables Wifi
+    if (connectionFail == true) {
+        oppMode = 0;
+        String s = "Fail";
+        modergb(s);
+        connectionFail = false;
+        return;
+    }
     int a[2], b[2], c[2];                   //Arrays for h, min. a: Sunrise, b: Sunset, c: Current time IST)
     GetData(a, b, c);                       //Gives arrays h and min values.
     sunrise.set(a[0], a[1]); sunset.set(b[0], b[1]);
@@ -374,14 +407,22 @@ void modergb(String c)               //displays the interface in a particular mo
     {
           r = rgb_auto[0], g = rgb_auto[1], b = rgb_auto[2];       
     }
+    if (c == "Fail")
+    {
+          r = 255, g = 255, b = 255;       
+    }
     analogWrite(REDPIN, r);
     analogWrite(GREENPIN, g);
     analogWrite(BLUEPIN, b);
+    Serial.println(r);
+    Serial.println(g);
+    Serial.println(b);
     delay(D);
 }
 
 void setup() 
-{
+{   
+    Serial.begin(115200);
     pinMode(REDPIN, OUTPUT);
     pinMode(GREENPIN, OUTPUT);
     pinMode(BLUEPIN, OUTPUT);
@@ -396,13 +437,17 @@ void setup()
     display.setCursor(0,0);                   //coordinates of point from which printing on display starts total pixels -> (128,64)    
     display.println(F("DIY TEAM 7"));         //prints any variable or text
     display.display();                        //prints all the things in buffer
-    modesInterface(); 
+    modesInterface();
+
+    oppMode = 2;                              //Defaults to automode at startup
+    Serial.println("auto");
+    automode();
 }
 
 void loop()
 {
 
-    Serial.begin(9600);
+    
     key = keypad.getKey();        //takes input from keypad
     
     if (key)                      //won't enter the if unless a key is pressed
@@ -420,25 +465,29 @@ void loop()
             oppMode = 0;
         }
         if (key == '1')
-        {
-            automode();
+        {   
             oppMode = 2;
+            Serial.println("auto");
+            automode();
         }
         if (key == '4')
         {
+            oppMode = 1;
             modesInterface_TextStyle();        
             display.setCursor(0,0);
             display.println(F("Enter time in HH : MM"));
             display.display();
             usertimeinput();
-            oppMode = 1;
+            while (incorrecKeyInput == true) {
+                   usertimeinput();
+            }
         }        
     }
 
     if (oppMode == 1)           //If oppMode is in Manual
     {
         int Min = current_time();                          //time in minutes
-    
+        
         if ( Min <= 780 && Min >= 360 )                //gives wavelength according to the time of day the sunrise(6am) and sunset(7pm) time for manual input are perdefined
           {
               colour_wav_manual = 750 - 0.79718*(Min-360);
@@ -454,11 +503,21 @@ void loop()
 
         delay(1000);
         Wav_to_RGB(colour_wav_manual, rgb_manual);   //calls the wav to rgb function to get rgb data according to the wavelength
+        Serial.println(colour_wav_manual);
         String s = "Manual";
         modergb(s);                                  //give required output on the display and to the rgb pins
     } 
     else if (oppMode == 2)
     {
+        if (day() == 1) {
+            delay(60000);
+            usertimeinput();
+            while (incorrecKeyInput == true) {
+                   usertimeinput();
+            }
+        }
+        
+        
         if ( current_time() <= min_mid_day && current_time() >= sunrise.minutes )     //Calculate wavelength as at a particular time
           {
               colour_wav_auto = 750 - colour_wav_slope*(current_time()-sunrise.minutes);
@@ -473,8 +532,9 @@ void loop()
           }
         delay(1000);
         Wav_to_RGB(colour_wav_auto, rgb_auto);                                             //Call function to get RGB value from wavelength
+        Serial.println(colour_wav_auto);
         String s = "Auto";
         modergb(s);                                  //give required output on the display and to the rgb pins
     }
-    
+    yield();
 }
