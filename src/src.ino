@@ -3,7 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Keypad.h>
-#include <TimeLib.h> //Library Time by Paul Stoffregen. Allow the functionality of setting time and getting current time value.
+#include <TimeLib.h> //Library Time by Paul Stoffregen. Allows the functionality of setting time and getting current time value.
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -63,7 +63,7 @@ void modergb(String c);
 void EnableWiFi()                                              // Connects to WiFi
 {
   WiFi.mode(WIFI_STA);
-  WiFi.begin("TP-Link_BF97", "Crzdip@90");                     //Enter ssid, password as strings)
+  WiFi.begin("SSID", "password");                     //Enter ssid, password as strings)
   Serial.print("Connecting to WiFi");
   int wifi_count = 0;                                          //Check iterations of wifi connecting loop
   while(WiFi.status() != WL_CONNECTED)
@@ -452,25 +452,25 @@ void loop()
     
     if (key)                      //won't enter the if unless a key is pressed
     {
-        if (key == '7')
+        if (key == '7')           //Sleep mode
         {
-            String s = "Sleep";
+            String s = "Sleep";   
             modergb(s);
             oppMode = 0;
         }
-        if (key == '*')
+        if (key == '*')           //Work mode
         {
-            String s = "Work";
+            String s = "Work";    
             modergb(s);
             oppMode = 0;
         }
-        if (key == '1')
+        if (key == '1')           //Auto mode
         {   
             oppMode = 2;
             Serial.println("auto");
             automode();
         }
-        if (key == '4')
+        if (key == '4')           //Manual mode
         {
             oppMode = 1;
             modesInterface_TextStyle();        
@@ -479,12 +479,21 @@ void loop()
             display.display();
             usertimeinput();
             while (incorrecKeyInput == true) {
+                   modesInterface_TextStyle();        
+                   display.setCursor(0,0);
+                   display.println(F("Enter time in HH : MM"));
+                   display.display();
                    usertimeinput();
             }
         }        
     }
-
-    if (oppMode == 1)           //If oppMode is in Manual
+  
+  if (day() == 1 && oppMode == 2) {           //Check incase device passes midnight.
+      delay(60000);
+      automode();
+  }
+  
+  if (oppMode == 1)           //If oppMode is in Manual
     {
         int Min = current_time();                          //time in minutes
         
@@ -509,15 +518,6 @@ void loop()
     } 
     else if (oppMode == 2)
     {
-        if (day() == 1) {
-            delay(60000);
-            usertimeinput();
-            while (incorrecKeyInput == true) {
-                   usertimeinput();
-            }
-        }
-        
-        
         if ( current_time() <= min_mid_day && current_time() >= sunrise.minutes )     //Calculate wavelength as at a particular time
           {
               colour_wav_auto = 750 - colour_wav_slope*(current_time()-sunrise.minutes);
