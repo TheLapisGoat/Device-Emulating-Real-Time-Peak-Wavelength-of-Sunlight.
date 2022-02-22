@@ -271,9 +271,7 @@ void modesInterface_TextStyle()   //sets text style to size 1 and clears the exi
 }
 
 void modesInterface()  //displays the main modes interface, won't work without modesInterface_TextStyle both functions are seprate since it allows to print any other message than main interface
-{
-    display.setCursor(10,10);
-    display.println(F("# to turnoff"));       
+{    
     display.setCursor(10,20);             
     display.println(F("1. Auto"));           
     display.setCursor(10,30);             
@@ -282,7 +280,6 @@ void modesInterface()  //displays the main modes interface, won't work without m
     display.println(F("7. Sleep"));           
     display.setCursor(10,50);             
     display.println(F("*. Work"));           
-    display.display();
     display.display();
 }
 
@@ -398,10 +395,6 @@ void modergb(String c)               //displays the interface in a particular mo
     if (c == "Manual")
     {
           r = rgb_manual[0], g = rgb_manual[1], b = rgb_manual[2];
-    }
-    if (c == "Turnoff")
-    {
-          r = 0, g = 0, b = 0;       
     }
     if (c == "Auto")
     {
