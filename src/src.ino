@@ -490,11 +490,11 @@ void loop()
     {
         int Min = current_time();                          //time in minutes
         
-        if ( Min <= 780 && Min >= 360 )                //gives wavelength according to the time of day the sunrise(6am) and sunset(7pm) time for manual input are perdefined
+        if ( Min <= 750 && Min >= 360 )                //gives wavelength according to the time of day the sunrise(6am) and sunset(7pm) time for manual input are perdefined
           {
               colour_wav_manual = 750 - 0.79718*(Min-360);
           }
-        else if ( Min >= 780 && Min <= 1140 )
+        else if ( Min >= 750 && Min <= 1140 )
           {
               colour_wav_manual = 750 - 0.79718*(1140-Min);
           }
